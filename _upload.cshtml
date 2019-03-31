@@ -1,0 +1,136 @@
+@model Model.PartialModel
+
+@if (Model.IsLoadJs)
+{
+<link href="webuploader/webuploader.css" rel="stylesheet" />
+<script src="webuploader/webuploader.min.js"></script>
+}
+<style>*.no { display:none;}</style>
+<!--asp.mvc 分部页 文件上传-->
+
+    <div class="wu-example">
+        <!--用来存放文件信息-->
+        <div id="thelist_@(Model.Id)" class="uploader-list">
+
+        </div>
+        <div class="btns @(Model.BtnId==null?"":"no")">
+            <div id="picker_@(Model.Id)">@((Model.isImg==false) ? "选择文件":"选择图片") </div>
+        </div>
+    </div>
+
+<script type="text/javascript">
+    WebUploader.create({
+        // swf文件路径
+        swf: 'webuploader/js/Uploader.swf',
+        duplicate:true,
+        // 文件接收服务端。
+        server: '/Upload/UpLoadWdn?isImg=' + ("@((Model.isImg==false)?0:1)"),
+
+        // 选择文件的按钮。可选。
+        // 内部根据当前运行是创建，可能是input元素，也可能是flash.
+        pick: function () {
+            var _id2 = "@(Model.BtnId == null ? "#picker_" + Model.Id : "#" + Model.BtnId)";
+            console.log("_id2", _id2);
+            return _id2;
+        }(),
+
+        // 不压缩image, 默认如果是jpeg，文件上传前会压缩一把再上传！
+        resize: false,
+        // 只允许选择图片文件。
+        accept: function () {
+            var isImg = "@((Model.isImg==false)?0:1)";
+            if (isImg=="1") {
+                return {
+                    title: 'Images',
+                    extensions: 'gif,jpg,jpeg,bmp,png',
+                    mimeTypes: 'image/*'
+                }
+            }
+
+            return {
+                title: '文件',
+                extensions: '*',
+                mimeTypes: '*/*'
+            }
+
+        }()
+    }).on('fileQueued', function (file) {
+        var that = this;
+        // 当有文件被添加进队列的时候
+        var ism = "@(Model.Mutiple?1:0)";
+        var IsPrveview = "@(Model.IsPrveview ? 1 : 0)";
+
+        var $t = $("#thelist_@(Model.Id)");
+        var hmsg = '<div id="' + file.id + '" class="item">' +
+            '<h4 class="info">' + file.name + '</h4>' +
+            '<p><img id="' + file.id + '_img" /></p>' +
+            '<p class="state">等待上传...</p>' +
+        '</div>';
+
+        if (IsPrveview==1) {
+            if (ism == 1) {
+                $t.append(hmsg);
+            } else {
+                $t.html(hmsg);
+            }
+        } else {
+            hmsg = '<div id="' + file.id + '" class="item">' +
+            '<p class="state">等待上传...</p>' +
+        '</div>';
+            $t.html(hmsg);
+        }
+
+        // 创建缩略图
+        // 如果为非图片文件，可以不用调用此方法。
+        // thumbnailWidth x thumbnailHeight 为 100 x 100
+        IsPrveview==1&& that.makeThumb(file, function (error, src) {
+            var $img = $("#" + file.id + '_img');
+            if (error) {
+                $img.replaceWith('<span>不能预览</span>');
+                return;
+            }
+
+            $img.attr('src', src);
+        }, 100, 100);
+
+        setTimeout(function () {
+            that.upload();
+        }, 50);
+    }).on('uploadProgress', function (file, percentage) {
+        // 文件上传过程中创建进度条实时显示。
+        var $li = $('#' + file.id),
+            $percent = $li.find('.progress .progress-bar');
+
+        // 避免重复创建
+        if (!$percent.length) {
+            $percent = $('<div class="progress progress-striped active">' +
+              '<div class="progress-bar" role="progressbar" style="width: 0%">' +
+              '</div>' +
+            '</div>').appendTo($li).find('.progress-bar');
+        }
+
+        $li.find('p.state').text('上传中');
+        $percent.css('width', percentage * 100 + '%');
+    }).on('uploadSuccess', function (file, data) {        
+        if (data.code == 0 && data.data) {
+            var JsCallBack = "@Model.JsCallBack";
+            if (JsCallBack) {
+                eval('(' + JsCallBack + '(' +@(Model.Id) +',"' + data.data.src + '"))')
+            } else {
+                console.warn("没找到文件回调方法");
+            }
+        }
+
+        var $p = $('#' + file.id).find('p.state');
+        setTimeout(function () {
+            $p.text('已上传');
+        }, 50);
+        setTimeout(function () {
+            $p.text('');
+        }, 2000);
+    }).on('uploadError', function (file) {
+        $('#' + file.id).find('p.state').text('上传出错');
+    }).on('uploadComplete', function (file) {
+        $('#' + file.id).find('.progress').fadeOut();
+    })
+</script>

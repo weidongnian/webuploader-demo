@@ -1,0 +1,31 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>上传图片的Demo</title>
+    <script src="jquery-1.11.3.min.js"></script>
+
+</head>
+<body>
+    <div>
+        <!--asp.mvc 分部页 文件上传-->
+        @Html.Partial("_Upload", 
+       new Hotch.Model.Model.PartialModel { IsLoadJs = true, Id = 0, Mutiple = true, JsCallBack = "window.JsCallBack" })
+
+        <script>
+            window.JsCallBack = function (id, src) {
+                console.log('图片回调，上传成功');
+                console.log('id', id);
+                console.log('src', src);
+            }
+        </script>
+
+    </div>
+</body>
+
+</html>
+
