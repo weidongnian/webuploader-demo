@@ -135,5 +135,11 @@ namespace wdn.Web.Controllers
 
         #endregion
 
+        string GetDomainName()
+        {
+            string webRoot =Request.Url.Scheme + "://" + Request.Url.Host + ":" + Request.Url.Port;
+
+            return webRoot;
+        }
     }
 }
